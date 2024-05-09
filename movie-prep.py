@@ -11,8 +11,6 @@ import re
 
 with open('TMDB.API_KEY', 'r') as key_file:
     tmdb.API_KEY = key_file.read().strip()
-print(tmdb.API_KEY)
-print(type(tmdb.API_KEY))
 
 delim='@ ' # using commas messes up some movies e.g. The Good, The Bad, and The Ugly
 
