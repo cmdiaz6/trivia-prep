@@ -73,15 +73,20 @@ def print_movie_info(movie, year=None):
     print( *genres, sep='/', end=delim)
     print( *subgenres, sep='/', end=delim)
 
-    # print 'Title, Year, '
-    print( movie, year, sep=delim, end=delim)
+    # print 'Title, Tagline, Year, '
+    tagline = hit.info()['tagline']
+    print( movie, tagline, year, sep=delim, end=delim)
 
     # Actor categories: adult, gender, id, name, original_name, character, etc
 
     # print top 3 billed actors as 'Actor : Character, '
     small_cast = False
     separator=' : '
-    print( cast[0]['name'], cast[0]['character'] , sep=separator, end=delim)
+    try:
+        print( cast[0]['name'], cast[0]['character'] , sep=separator, end=delim)
+    except IndexError:
+        print( 'CAST NOT FOUND - check movie', end=delim)
+        return
     try:
         print( cast[1]['name'], cast[1]['character'] , sep=separator, end=delim)
     except IndexError:
@@ -99,7 +104,7 @@ def print_movie_info(movie, year=None):
         count = 0
         for actor in cast:
             count += 1
-            if actor['gender'] != 2:
+            if actor['gender'] and actor['gender'] != 2:
                 if count <= 3: 
                     first_non_male = actor['name'], actor['character']
                     continue # skip if actor is already in top 3
@@ -164,11 +169,11 @@ def print_movie_info(movie, year=None):
     #print(' ', end=delim)
     # Based On: Novel/Novella, Play, Comic
 
-    # Oscar Winner (categories)
-    # Picture, Actress, Actor, Director, or Screenplay
+    # Oscar Winner: yes or no 
     # TODO: Wikipedia API? 
 
     # TODO: review Keywords
+
 
 # read list of movies
 year_match = re.compile("[12][0-9][0-9][0-9]")
