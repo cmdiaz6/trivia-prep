@@ -127,7 +127,8 @@ def print_movie_info(movie, year=None):
 
         age_at_filming = int(year) - int(yob)
         if age_at_filming < 18:
-            print( actor['name'], actor['character'], sep=separator, end=delim)
+            name_and_age = actor['name'] + ' (' + str(age_at_filming) + ')'
+            print( name_and_age, actor['character'], sep=separator, end=delim)
             blank_child = False
             break
     if blank_child:
