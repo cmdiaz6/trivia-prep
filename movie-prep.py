@@ -122,7 +122,8 @@ def print_movie_info(movie, year=None):
         person = tmdb.People( actor['id'] ).info() # also_known_as, biography, birthday, deathday, gender, place_of_birth
         try:
             yob = person['birthday'][:4]
-        except TypeError:
+        except (TypeError, KeyError):
+            # assuming if there's no DoB info, the actors lower on the list also won't have it
             break
 
         age_at_filming = int(year) - int(yob)
