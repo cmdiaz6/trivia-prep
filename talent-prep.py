@@ -34,10 +34,18 @@ def print_talent_info(talent, year=None):
     # Loop through films. get title (or original_title?) and release_date
     film_list = []
     for film in films:
-        if film['release_date']: # exclude unreleased films
-            film_date = film['title'] + ' (' + film['release_date'] + ')'
-            film_list.append( film_date )
-    print( *film_list, sep='/', end=delim)
+        try:
+            if 99 in film['genre_ids']: # skip documentaries
+                continue 
+            release_year = int( film['release_date'][0:4] )
+            if film['release_date'] and release_year < 2025:
+                film_list.append( (film['title'], film['release_date'], film['character']) )
+        except:
+            continue #release date or genre_ids not found
+    film_list.sort(key=lambda x: x[1]) # sort by date
+    for film in film_list:
+        print( film[0] + ' (' + film[1] + ') - ' + film[2], end=' % ')
+    #print( *film_list, sep='/', end=delim)
 
 
 # read list of talent
