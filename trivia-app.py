@@ -2,7 +2,7 @@
 
 import dash
 from dash import dcc, html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import pandas as pd
 import random
 
@@ -26,11 +26,16 @@ app.layout = html.Div([
         html.Button("Get Random Trivia", id="generate-btn", n_clicks=0)
     ], style={"width": "30%", "display": "inline-block", "verticalAlign": "top"}),
 
-    html.Div(id="trivia-output", style={"width": "65%", "display": "inline-block", "paddingLeft": "20px", "fontSize": "20px"})
+    html.Div([
+        html.Div(id="trivia-output", style={"fontSize": "20px"}),
+        html.Button("Save Trivia", id="save-btn", n_clicks=0, style={"marginTop": "10px"}),
+        html.Div(id="save-status", style={"marginTop": "5px", "color": "green"})
+    ], style={"width": "65%", "display": "inline-block", "paddingLeft": "20px"})
 ])
 
 @app.callback(
-    Output("trivia-output", "children"),
+    [Output("trivia-output", "children"),
+     Output("save-btn", "data-trivia")],  # Store trivia data for saving
     [Input("generate-btn", "n_clicks"),
      Input("genre-selector", "value")]
 )
@@ -42,6 +47,7 @@ def generate_trivia(n_clicks, selected_genre):
         while attempts > 0:
             random_movie = filtered_df.sample(n=1).iloc[0]  # Select a random movie
             title = random_movie["Title"]
+            year = random_movie["Year"]
             plot = random_movie["Plot"]
 
             # Find all non-empty trivia columns
@@ -49,17 +55,33 @@ def generate_trivia(n_clicks, selected_genre):
 
             if trivia_columns:
                 trivia_question = random_movie[random.choice(trivia_columns)]  # Pick a random trivia question
-                return html.Div([
+                trivia_data = f"{title} ({year}): {trivia_question}"  # Format for saving
+                return (html.Div([
                     html.Div(f"**{title}**", style={"fontWeight": "bold", "fontSize": "24px"}),
                     html.Div(trivia_question, style={"marginTop": "10px"}),
                     html.Div(f"Plot: {plot}", style={"marginTop": "10px", "fontStyle": "italic"})
-                ])
+                ]), trivia_data)
             
             attempts -= 1  # Try another movie if no trivia found
 
-        return "No trivia available for this genre. Please try again later."
+        return ("No trivia available for this genre. Please try again later.", "")
     
-    return "Choose a genre and click the button to generate a trivia question!"
+    return ("Choose a genre and click the button to generate a trivia question!", "")
+
+@app.callback(
+    Output("save-status", "children"),
+    [Input("save-btn", "n_clicks")],
+    [State("save-btn", "data-trivia")]
+)
+def save_trivia(n_clicks, trivia_data):
+    if n_clicks > 0 and trivia_data:
+        try:
+            with open("used_trivia.txt", "a") as f:
+                f.write(f"{n_clicks}. {trivia_data}\n")  # Numbered entry
+            return "Trivia saved successfully!"
+        except Exception as e:
+            return f"Error saving trivia: {e}"
+    return ""
 
 if __name__ == '__main__':
     app.run(debug=True)
