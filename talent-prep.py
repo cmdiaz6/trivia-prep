@@ -38,14 +38,23 @@ def print_talent_info(talent, year=None):
             if 99 in film['genre_ids']: # skip documentaries
                 continue 
             release_year = int( film['release_date'][0:4] )
-            if film['release_date'] and release_year < 2025:
+            if film['release_date'] and release_year < 2026:
                 film_list.append( (film['title'], film['release_date'], film['character']) )
         except:
             continue #release date or genre_ids not found
     film_list.sort(key=lambda x: x[1]) # sort by date
     for film in film_list:
         print( film[0] + ' (' + film[1] + ') - ' + film[2], end=' % ')
-    #print( *film_list, sep='/', end=delim)
+
+    # Check bio for academy award
+    print(' ', end=delim)
+    oscar_check = re.compile('[^.]+academy award[^.]+', re.IGNORECASE)
+    bio = hit.info()['biography']
+    if oscar_check.search( bio ):
+        print( oscar_check.search( bio ).group(0), end=delim )
+    else:
+        print( 'NO OSCAR MENTIONS IN BIO', end=delim )
+
 
 
 # read list of talent
