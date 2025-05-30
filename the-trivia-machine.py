@@ -16,7 +16,7 @@ app = dash.Dash(__name__)
 genres = sorted(df["Genre"].dropna().unique())
 
 app.layout = html.Div([
-    html.H1("\ud83c\udfac The Trivia Machine", style={"textAlign": "center", "marginBottom": "30px", "color": "#333"}),
+    html.H1("\ud83c\udfac The Trivia Machine \U0001F916", style={"textAlign": "center", "marginBottom": "30px", "color": "#333"}),
 
     dcc.Store(id="used-trivia-store"),
 
@@ -24,7 +24,7 @@ app.layout = html.Div([
         html.Div([
             dcc.Checklist(
                 id="plot-toggle",
-                options=[{"label": "Include Plot", "value": "show"}],
+                options=[{"label": "Use Plot", "value": "show"}],
                 value=["show"],
                 style={"marginBottom": "20px"}
             ),
@@ -36,18 +36,22 @@ app.layout = html.Div([
                 labelStyle={"display": "block", "margin": "5px 0"},
                 inputStyle={"marginRight": "10px"}
             ),
-            html.Label("Choose a year range:", style={"fontWeight": "bold", "fontSize": "18px", "marginTop": "20px"}),
-            dcc.RadioItems(
+            html.Label("Choose a decade:", style={"fontWeight": "bold", "fontSize": "18px", "marginTop": "20px"}),
+            dcc.Checklist(
                 id="year-selector",
                 options=[
-                    {"label": "All Years", "value": "all"},
+                    {"label": "All Decades", "value": "all"},
                     {"label": "< 1970", "value": "pre1970"},
-                    {"label": "1970 - 1999", "value": "1970to1999"},
-                    {"label": "> 1999", "value": "post1999"},
+                    {"label": "1970s", "value": "1970s"},
+                    {"label": "1980s", "value": "1980s"},
+                    {"label": "1990s", "value": "1990s"},
+                    {"label": "2000s", "value": "2000s"},
+                    {"label": "2010s", "value": "2010s"},
+                    {"label": "2020s", "value": "2020s"},
                 ],
-                value="all",
-                labelStyle={"display": "block", "margin": "5px 0"},
-                inputStyle={"marginRight": "10px"}
+                value=["all"],
+                labelStyle={"display": "inline-block", "width": "45%", "margin": "5px 5px 5px 0"},
+                inputStyle={"marginRight": "8px"}
             ),
             html.Button("\ud83c\udfb2 Get Random Trivia", id="generate-btn", n_clicks=0,
                         style={"marginTop": "10px", "backgroundColor": "#0074D9", "color": "white",
@@ -87,14 +91,34 @@ app.layout = html.Div([
     """, dangerously_allow_html=True)
 ])
 
-def get_filtered_df(selected_genre, selected_year_range):
+def get_filtered_df(selected_genre, selected_year_ranges):
     filtered = df[df["Genre"] == selected_genre]
-    if selected_year_range == "pre1970":
-        filtered = filtered[filtered["Year"] < 1970]
-    elif selected_year_range == "1970to1999":
-        filtered = filtered[(filtered["Year"] >= 1970) & (filtered["Year"] <= 1999)]
-    elif selected_year_range == "post1999":
-        filtered = filtered[filtered["Year"] > 1999]
+    if "all" in selected_year_ranges:
+        return filtered
+
+    conditions = []
+    for decade in selected_year_ranges:
+        if decade == "pre1970":
+            conditions.append(filtered["Year"] < 1970)
+        elif decade == "1970s":
+            conditions.append((filtered["Year"] >= 1970) & (filtered["Year"] <= 1979))
+        elif decade == "1980s":
+            conditions.append((filtered["Year"] >= 1980) & (filtered["Year"] <= 1989))
+        elif decade == "1990s":
+            conditions.append((filtered["Year"] >= 1990) & (filtered["Year"] <= 1999))
+        elif decade == "2000s":
+            conditions.append((filtered["Year"] >= 2000) & (filtered["Year"] <= 2009))
+        elif decade == "2010s":
+            conditions.append((filtered["Year"] >= 2010) & (filtered["Year"] <= 2019))
+        elif decade == "2020s":
+            conditions.append((filtered["Year"] >= 2020) & (filtered["Year"] <= 2029))
+
+    if conditions:
+        combined_condition = conditions[0]
+        for cond in conditions[1:]:
+            combined_condition |= cond
+        filtered = filtered[combined_condition]
+
     return filtered
 
 def get_random_trivia(movie):
@@ -117,8 +141,11 @@ def get_random_trivia(movie):
      State("plot-toggle", "value")],
     prevent_initial_call=True
 )
-def generate_trivia(generate_clicks, selected_genre, selected_year_range, plot_toggle):
-    filtered_df = get_filtered_df(selected_genre, selected_year_range)
+def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, plot_toggle):
+    # Handle 'All Decades' logic: if selected, deselect others
+    if "all" in selected_year_ranges and len(selected_year_ranges) > 1:
+        selected_year_ranges = ["all"]
+    filtered_df = get_filtered_df(selected_genre, selected_year_ranges)
     attempts = 10
     while attempts > 0 and not filtered_df.empty:
         random_movie = filtered_df.sample(n=1).iloc[0]
@@ -135,7 +162,7 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_range, plot_t
         display_items = [html.Div(f"{title} ({year})", style={"fontWeight": "bold", "fontSize": "24px"})]
         if include_plot and plot:
             display_items.append(html.Div(f"Plot: {plot}", style={"marginTop": "10px", "fontStyle": "italic"}))
-            trivia_data = f"{title} ({year}): {plot}"
+            trivia_data = f"{plot} - ANSWER: {title} ({year})"
             answer_section = html.Button("\ud83d\udd75 Reveal Answer Choices", disabled=True,
                                          style={"marginTop": "10px", "backgroundColor": "#ccc", "color": "white",
                                                 "border": "none", "padding": "10px 20px", "borderRadius": "5px"})
@@ -168,3 +195,4 @@ def save_trivia(save_clicks, trivia_data):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
