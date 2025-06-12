@@ -124,11 +124,11 @@ def get_filtered_df(selected_genre, selected_year_ranges):
 def get_random_trivia(movie):
     trivia_cols = [col for col in movie.index if col.startswith("Trivia Q ") and pd.notna(movie[col]) and movie[col].strip()]
     if not trivia_cols:
-        return None, None, None
+        return None, None
     col = random.choice(trivia_cols)
     question = movie[col]
     answer_col = col.replace("Trivia Q ", "Q") + " Mult Choice & Answer"
-    return question, movie.get(answer_col, ""), col
+    return question, movie.get(answer_col, "")
 
 @app.callback(
     [Output("trivia-output", "children"),
@@ -153,7 +153,7 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, plot_
         year = random_movie["Year"]
         plot = random_movie.get("Plot", "")
 
-        question, answer_choices, col = get_random_trivia(random_movie)
+        question, answer_choices = get_random_trivia(random_movie)
         if not question:
             attempts -= 1
             continue
@@ -161,11 +161,14 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, plot_
         include_plot = "show" in plot_toggle
         display_items = [html.Div(f"{title} ({year})", style={"fontWeight": "bold", "fontSize": "24px"})]
         if include_plot and plot:
+            display_items = [html.Div(f"Guess the plot!", style={"fontWeight": "bold", "fontSize": "24px"})]
             display_items.append(html.Div(f"Plot: {plot}", style={"marginTop": "10px", "fontStyle": "italic"}))
             trivia_data = f"{plot} - ANSWER: {title} ({year})"
-            answer_section = html.Button("\ud83d\udd75 Reveal Answer Choices", disabled=True,
-                                         style={"marginTop": "10px", "backgroundColor": "#ccc", "color": "white",
-                                                "border": "none", "padding": "10px 20px", "borderRadius": "5px"})
+            answer_choices = f"{title} ({year})"
+            answer_section = html.Details([
+                html.Summary("\ud83d\udd75 Reveal Plot"),
+                html.Div(answer_choices, style={"marginTop": "10px", "fontStyle": "italic"})
+            ], style={"marginTop": "10px"})
         else:
             display_items.append(html.Div(question, style={"marginTop": "10px"}))
             trivia_data = f"{title} ({year}): {question} | Choices: {answer_choices}"
