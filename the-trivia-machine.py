@@ -22,11 +22,25 @@ app.layout = html.Div([
 
     html.Div(style={"display": "flex", "justifyContent": "center", "alignItems": "start"}, children=[
         html.Div([
-            dcc.Checklist(
-                id="plot-toggle",
-                options=[{"label": "Use Plot", "value": "show"}],
-                value=["show"],
-                style={"marginBottom": "20px"}
+            #dcc.Checklist(
+            #    id="question-toggle",
+            #    options=[{"label": "Use Plot", "value": "show"}],
+            #    value=["show"],
+            #    style={"marginBottom": "20px"}
+            #),
+            html.Label("Choose a question type:", style={"fontWeight": "bold", "fontSize": "18px"}),
+            dcc.RadioItems(
+                id="question-toggle",
+                options=[
+                    {"label": "Guess The Movie", "value": "guess_plot"},
+                    {"label": "Movie Trivia", "value": "std_trivia"},
+                    {"label": "Production Trivia", "value": "prod_trivia"},
+                ],
+                value="std_trivia",
+                #labelStyle={"display": "inline-block", "width": "45%", "margin": "5px 5px 5px 0"},
+                #inputStyle={"marginRight": "8px"}
+                labelStyle={"display": "block", "margin": "5px 0"},
+                inputStyle={"marginRight": "10px"}
             ),
             html.Label("Choose a genre:", style={"fontWeight": "bold", "fontSize": "18px"}),
             dcc.RadioItems(
@@ -121,13 +135,26 @@ def get_filtered_df(selected_genre, selected_year_ranges):
 
     return filtered
 
-def get_random_trivia(movie):
+def get_random_trivia(movie, question_toggle):
+    movie_trivia = "std_trivia" in question_toggle
+    #TODO: set up search in different columns
     trivia_cols = [col for col in movie.index if col.startswith("Trivia Q ") and pd.notna(movie[col]) and movie[col].strip()]
-    if not trivia_cols:
-        return None, None
-    col = random.choice(trivia_cols)
-    question = movie[col]
-    answer_col = col.replace("Trivia Q ", "Q") + " Mult Choice & Answer"
+    if movie_trivia:
+        if not trivia_cols:
+            return None, None
+        col = random.choice(trivia_cols)
+        question = movie[col]
+        answer_col = col.replace("Trivia Q ", "Q") + " Mult Choice & Answer"
+        return question, movie.get(answer_col, "")
+    else:
+        trivia_cols = [col for col in movie.index if col.startswith("Non-content Trivia ") and pd.notna(movie[col]) and movie[col].strip()]
+        if not trivia_cols:
+            return None, None
+        col = random.choice(trivia_cols)
+        question = movie[col]
+        answer_col = col.replace("Non-content Trivia ", "NCT ") + " Mult Ch & Ans"
+        print("PROD: ", answer_col, movie.get(answer_col, ""))
+        #return question, "NOTHING TO SEE HERE"
     return question, movie.get(answer_col, "")
 
 @app.callback(
@@ -138,28 +165,31 @@ def get_random_trivia(movie):
     [Input("generate-btn", "n_clicks")],
     [State("genre-selector", "value"),
      State("year-selector", "value"),
-     State("plot-toggle", "value")],
+     State("question-toggle", "value")],
     prevent_initial_call=True
 )
-def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, plot_toggle):
+def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, question_toggle):
     # Handle 'All Decades' logic: if selected, deselect others
     if "all" in selected_year_ranges and len(selected_year_ranges) > 1:
         selected_year_ranges = ["all"]
     filtered_df = get_filtered_df(selected_genre, selected_year_ranges)
-    attempts = 10
+    attempts = 200
     while attempts > 0 and not filtered_df.empty:
         random_movie = filtered_df.sample(n=1).iloc[0]
         title = random_movie["Title"]
         year = random_movie["Year"]
         plot = random_movie.get("Plot", "")
+        test = random_movie.get("Non-content Trivia 1")
 
-        question, answer_choices = get_random_trivia(random_movie)
+        production_trivia = "prod_trivia" in question_toggle
+        question, answer_choices = get_random_trivia(random_movie, question_toggle)
         if not question:
             attempts -= 1
             continue
 
-        include_plot = "show" in plot_toggle
+        include_plot = "guess_plot" in question_toggle
         display_items = [html.Div(f"{title} ({year})", style={"fontWeight": "bold", "fontSize": "24px"})]
+        # Hide the movie title if guessing the plot
         if include_plot and plot:
             display_items = [html.Div(f"Guess the plot!", style={"fontWeight": "bold", "fontSize": "24px"})]
             display_items.append(html.Div(f"Plot: {plot}", style={"marginTop": "10px", "fontStyle": "italic"}))
