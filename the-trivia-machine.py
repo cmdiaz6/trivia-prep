@@ -153,7 +153,6 @@ def get_random_trivia(movie, question_toggle):
         col = random.choice(trivia_cols)
         question = movie[col]
         answer_col = col.replace("Non-content Trivia ", "NCT ") + " Mult Ch & Ans"
-        print("PROD: ", answer_col, movie.get(answer_col, ""))
         #return question, "NOTHING TO SEE HERE"
     return question, movie.get(answer_col, "")
 
@@ -178,20 +177,27 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, quest
         random_movie = filtered_df.sample(n=1).iloc[0]
         title = random_movie["Title"]
         year = random_movie["Year"]
-        plot = random_movie.get("Plot", "")
+        plot = random_movie.get("Plot")
         test = random_movie.get("Non-content Trivia 1")
 
         production_trivia = "prod_trivia" in question_toggle
         question, answer_choices = get_random_trivia(random_movie, question_toggle)
-        if not question:
-            attempts -= 1
-            continue
 
         include_plot = "guess_plot" in question_toggle
+        if include_plot:
+            if not plot:
+                attempts -= 1
+                continue
+        else:
+            if not question:
+                print('-',title,question)
+                attempts -= 1
+                continue
+
         display_items = [html.Div(f"{title} ({year})", style={"fontWeight": "bold", "fontSize": "24px"})]
         # Hide the movie title if guessing the plot
-        if include_plot and plot:
-            display_items = [html.Div(f"Guess the plot!", style={"fontWeight": "bold", "fontSize": "24px"})]
+        if include_plot:
+            display_items = [html.Div(f"Guess the Movie", style={"fontWeight": "bold", "fontSize": "24px"})]
             display_items.append(html.Div(f"Plot: {plot}", style={"marginTop": "10px", "fontStyle": "italic"}))
             trivia_data = f"{plot} - ANSWER: {title} ({year})"
             answer_choices = f"{title} ({year})"
