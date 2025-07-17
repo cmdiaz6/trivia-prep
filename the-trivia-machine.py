@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import dash
 from dash import dcc, html
@@ -145,6 +145,8 @@ def get_random_trivia(movie, question_toggle):
         col = random.choice(trivia_cols)
         question = movie[col]
         answer_col = col.replace("Trivia Q ", "Q") + " Mult Choice & Answer"
+        #if "Q 3" in col or "Q 4" in col:
+        print(col)
         return question, movie.get(answer_col, "")
     else:
         trivia_cols = [col for col in movie.index if col.startswith("Non-content Trivia ") and pd.notna(movie[col]) and movie[col].strip()]
@@ -185,14 +187,20 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, quest
 
         include_plot = "guess_plot" in question_toggle
         if include_plot:
-            if not plot:
+            if isinstance( plot, str ):
+                plot = plot.strip()
+            if not isinstance( plot, str ) or len( plot ) == 0:
                 attempts -= 1
                 continue
+            else:
+                print(title, " - ", plot)
         else:
             if not question:
-                print('-',title,question)
                 attempts -= 1
                 continue
+            else:
+                print('--',title,' - ', answer_choices)
+        print('----------')
 
         display_items = [html.Div(f"{title} ({year})", style={"fontWeight": "bold", "fontSize": "24px"})]
         # Hide the movie title if guessing the plot
@@ -202,7 +210,7 @@ def generate_trivia(generate_clicks, selected_genre, selected_year_ranges, quest
             trivia_data = f"{plot} - ANSWER: {title} ({year})"
             answer_choices = f"{title} ({year})"
             answer_section = html.Details([
-                html.Summary("\ud83d\udd75 Reveal Plot"),
+                html.Summary("\ud83d\udd75 Reveal Answer"),
                 html.Div(answer_choices, style={"marginTop": "10px", "fontStyle": "italic"})
             ], style={"marginTop": "10px"})
         else:
